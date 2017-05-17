@@ -56,13 +56,10 @@ def main():
     signal.signal(signal.SIGINT, signal.SIG_DFL)
     Connection.establish(Args.host)
     Connection.enterNonblockingMode()
-    Connection.on("message", testCallback)
+    Connection.on("message", msgCallback)
     mainloop = GObject.MainLoop()
     mainloop.run()
-    while True:
-        logging.debug("mimimi...")
-        Connection.send("message", "test2")
-        time.sleep(10)
+
 
 
 if __name__ == '__main__':
