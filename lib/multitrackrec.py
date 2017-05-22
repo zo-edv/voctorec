@@ -2,7 +2,10 @@ import subprocess
 import logging
 import datetime
 import os.path
+import shlex
+import time
 
+#TODO: move templates to config file
 ffmpegtemplate = """ffmpeg -y -nostdin \
 {inputs} \
 -ac 2 -channel_layout 2 -aspect 16:9 \
@@ -39,6 +42,24 @@ class MultiTrackRec:
 
     def start_recording(self):
         cmd = self.get_ffmpeg_str()
+        parsed = shlex.split(cmd)
+        self.log.debug("Parsed cmd: " + str(parsed))
+        if not self.ffmpegProcess:
+            self.log.info("Starting FFmpeg Recording Process")
+            self.ffmpegProcess = subprocess.Popen(parsed, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, )
+        else:
+            self.log.error("Error: Process already running / exited unexpectedly. Restarting instead.")
+            self.ffmpegProcess.terminate()
+            self.start_recording()
+        self.recording = True
+
+    def update_status(self):
+        if self.ffmpegProcess.poll():
+            self.recording = False
+            self.log.error("FFmpeg exited unexpectedly. RC: " + str(self.ffmpegProcess.poll()))
+        else:
+            print("data:")
+            print(self.ffmpegProcess.stderr.readlines())
 
     def get_ffmpeg_str(self):
         audioStr = ""
@@ -53,16 +74,12 @@ class MultiTrackRec:
         time = datetime.time()
         filename = filenameTemplate.format(year=date.year, month=date.month, day=date.day, hour=time.hour,
                                            minute=time.minute, second=time.second)
-        filenamecopy = filename.copy()
+        filenamecopy = filename
+        i = 0
         while os.path.exists(filename):
-
-        ffstr = ffmpegtemplate.format(inputs=inputStr, videotracks=videoStr, audiotracks=audioStr)
+            filename = filenamecopy + "_" + str(i)
+            i += 1
+        ffstr = ffmpegtemplate.format(inputs=inputStr, videotracks=videoStr, audiotracks=audioStr, filename=filename)
         self.log.debug("FFmpeg String generated: " + ffstr)
         return ffstr
 
-if __name__ == "__main__":
-    rec = MultiTrackRec()
-    rec.add_video_track(11000, 0, "mix")
-    rec.add_video_track(13000, 1, "cam1mirror")
-    rec.add_audio_track(0, "mainaudio")
-    print(rec.get_ffmpeg_str())

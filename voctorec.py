@@ -14,6 +14,7 @@ import time
 from lib.args import Args
 from lib.loghandler import LogHandler
 import lib.connection as Connection
+from lib.multitrackrec import MultiTrackRec
 
 def msgCallback(args):
     log = logging.getLogger("MessageHandler")
@@ -54,6 +55,14 @@ def main():
     logging.root.setLevel(level)
     logging.debug('setting SIGINT handler')
     signal.signal(signal.SIGINT, signal.SIG_DFL)
+    rec = MultiTrackRec()
+    rec.add_video_track(11000, 0, "mix")
+    rec.add_video_track(13000, 1, "cam1mirror")
+    rec.add_audio_track(0, "mainaudio")
+    rec.start_recording()
+    while True:
+        rec.update_status()
+        time.sleep(0.5)
     Connection.establish(Args.host)
     Connection.enterNonblockingMode()
     Connection.on("message", msgCallback)
