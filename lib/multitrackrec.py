@@ -4,6 +4,7 @@ import datetime
 import os.path
 import shlex
 import time
+from gi.repository import GObject
 
 #TODO: move templates to config file
 ffmpegtemplate = """ffmpeg -y -nostdin \
@@ -21,7 +22,9 @@ filenameTemplate = "voctorec_{year}-{month}-{day}_{hour}-{minute}-{second}"
 class MultiTrackRec:
     def __init__(self):
         self.recording = False
-        self.curTime = 0
+        self.curTime = ""
+        self.curBitrate = ""
+        self.curSize = ""
         self.ffmpegProcess = None
         self.videotracks = list()
         self.audiotracks = list()
@@ -46,20 +49,31 @@ class MultiTrackRec:
         self.log.debug("Parsed cmd: " + str(parsed))
         if not self.ffmpegProcess:
             self.log.info("Starting FFmpeg Recording Process")
-            self.ffmpegProcess = subprocess.Popen(parsed, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True, )
+            self.ffmpegProcess = subprocess.Popen(parsed, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
+
         else:
             self.log.error("Error: Process already running / exited unexpectedly. Restarting instead.")
             self.ffmpegProcess.terminate()
+            self.ffmpegProcess = None
             self.start_recording()
         self.recording = True
+        GObject.io_add_watch(self.ffmpegProcess.stderr, GObject.IO_IN, self.on_data)
 
-    def update_status(self):
-        if self.ffmpegProcess.poll():
-            self.recording = False
-            self.log.error("FFmpeg exited unexpectedly. RC: " + str(self.ffmpegProcess.poll()))
-        else:
-            print("data:")
-            print(self.ffmpegProcess.stderr.readlines())
+    def on_data(self, source, _, *args):
+        line = source.readline()
+        line = line.split()
+        self.log.debug(line)
+        try:
+            if "time=" in line[-2]:
+                self.curTime = line[-2][5:]
+            if line[-4] == "size=":
+                self.curSize = line[-3][:-2]
+            if "bitrate=" in line[-1]:
+                self.curBitrate = line[-1][8:]
+            self.log.debug("Time: {}, Bitrate: {}, Size: {}".format(self.curTime, self.curBitrate, self.curSize))
+        except IndexError:
+            pass
+        return True
 
     def get_ffmpeg_str(self):
         audioStr = ""

@@ -60,9 +60,7 @@ def main():
     rec.add_video_track(13000, 1, "cam1mirror")
     rec.add_audio_track(0, "mainaudio")
     rec.start_recording()
-    while True:
-        rec.update_status()
-        time.sleep(0.5)
+
     Connection.establish(Args.host)
     Connection.enterNonblockingMode()
     Connection.on("message", msgCallback)
