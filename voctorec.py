@@ -16,18 +16,36 @@ from lib.loghandler import LogHandler
 import lib.connection as Connection
 from lib.multitrackrec import MultiTrackRec
 
-def msgCallback(args):
-    log = logging.getLogger("MessageHandler")
-    log.info("Received Message: " + str(args))
 
 
 
-class Voctoconfig(object):
+
+
+class voctorec(object):
 
     def __init__(self):
-        self.log = logging.getLogger("Voctoconfig")
+        self.log = logging.getLogger("voctorec")
         self.log.debug("Creating GObject Mainloop")
         self.mainloop = GObject.MainLoop()
+
+        Connection.establish(Args.host)
+        Connection.enterNonblockingMode()
+        Connection.on("message", self.msgCallback)
+
+        self.rec = MultiTrackRec()
+        self.rec.add_video_track(11000, 0, "mix")
+        self.rec.add_video_track(13000, 1, "cam_mirror")
+        self.rec.add_video_track(13001, 1, "grabber_mirror")
+        self.rec.add_audio_track(0, "mainaudio")
+
+    def msgCallback(self, args):
+        log = logging.getLogger("MessageHandler")
+        log.info("Received Message: " + str(args))
+        if args == "rec":
+            if self.rec.recording:
+                self.rec.stop_recording()
+            else:
+                self.rec.start_recording()
 
     def run(self):
         self.log.info("Running MainLoop")
@@ -55,17 +73,10 @@ def main():
     logging.root.setLevel(level)
     logging.debug('setting SIGINT handler')
     signal.signal(signal.SIGINT, signal.SIG_DFL)
-    rec = MultiTrackRec()
-    rec.add_video_track(11000, 0, "mix")
-    rec.add_video_track(13000, 1, "cam1mirror")
-    rec.add_audio_track(0, "mainaudio")
-    rec.start_recording()
 
-    Connection.establish(Args.host)
-    Connection.enterNonblockingMode()
-    Connection.on("message", msgCallback)
-    mainloop = GObject.MainLoop()
-    mainloop.run()
+    vrec = voctorec()
+    vrec.run()
+
 
 
 

@@ -4,7 +4,9 @@ import datetime
 import os.path
 import shlex
 import time
+import lib.connection as Connection
 from gi.repository import GObject
+import copy
 
 #TODO: move templates to config file
 ffmpegtemplate = """ffmpeg -y -nostdin \
@@ -13,7 +15,7 @@ ffmpegtemplate = """ffmpeg -y -nostdin \
 {videotracks} \
 {audiotracks} \
 -flags +global_header -flags +ilme+ildct \
--f mpegts {filename}.ts"""
+-f segment -segment_time 180 -segment_format mpegts {filename}-%d.ts"""
 videotracktemplate = "-map {id}:v -c:v:{id} mpeg2video -pix_fmt:v:{id} yuv422p -qscale:v:{id} 2 -qmin:v:{id} 2 -qmax:v:{id} 7 -keyint_min 0 -bf:{id} 0 -g:{id} 0 -intra:{id} -maxrate:{id} 90M "
 audiotracktemplate = "-map {id}:a -c:a:{id} mp2 -b:a:{id} 192k -ac:a:{id} 2 -ar:a:{id} 48000 "
 inputtemplate = "-i tcp://{host}:{port} "
@@ -30,6 +32,7 @@ class MultiTrackRec:
         self.audiotracks = list()
         self.log = logging.getLogger("multitrackrec")
         self.log.info("MultiTrackRecorder Initialized")
+        self.basepath = "/home/zoadmin/record/"
 
     def add_video_track(self, port, id, name):
         track = {"id": int(id), "name": str(name), "port": int(port)}
@@ -44,9 +47,28 @@ class MultiTrackRec:
         self.log.debug("Track: " + str(track))
 
     def start_recording(self):
-        cmd = self.get_ffmpeg_str()
+
+        date = datetime.datetime.now()
+
+        foldername = filenameTemplate.format(year=date.year, month=date.month, day=date.day, hour=date.hour,
+                                           minute=date.minute, second=date.second)
+        foldernamecopy = copy.copy(foldername)
+        self.log.debug(foldername)
+        self.log.debug(self.basepath)
+        i = 0
+        folderpath = self.basepath + foldername
+        while os.path.exists(folderpath):
+            folderpath = self.basepath + foldernamecopy + "_" + str(i)
+            i += 1
+
+        self.log.info("Creating Folder " + folderpath)
+        os.mkdir(folderpath)
+
+
+        cmd = self.get_ffmpeg_str(folderpath + "/segment")
         parsed = shlex.split(cmd)
         self.log.debug("Parsed cmd: " + str(parsed))
+
         if not self.ffmpegProcess:
             self.log.info("Starting FFmpeg Recording Process")
             self.ffmpegProcess = subprocess.Popen(parsed, stdout=subprocess.PIPE, stderr=subprocess.PIPE, universal_newlines=True)
@@ -57,7 +79,14 @@ class MultiTrackRec:
             self.ffmpegProcess = None
             self.start_recording()
         self.recording = True
+        Connection.send("message rec_running")
         GObject.io_add_watch(self.ffmpegProcess.stderr, GObject.IO_IN, self.on_data)
+
+    def stop_recording(self):
+        self.ffmpegProcess.terminate()
+        self.ffmepgProcess = None
+        self.recording = False
+        Connection.send("message", "rec_stop")
 
     def on_data(self, source, _, *args):
         line = source.readline()
@@ -66,16 +95,15 @@ class MultiTrackRec:
         try:
             if "time=" in line[-2]:
                 self.curTime = line[-2][5:]
-            if line[-4] == "size=":
-                self.curSize = line[-3][:-2]
-            if "bitrate=" in line[-1]:
-                self.curBitrate = line[-1][8:]
+
             self.log.debug("Time: {}, Bitrate: {}, Size: {}".format(self.curTime, self.curBitrate, self.curSize))
+            Connection.send("message", "recstatus,{},{},{}".format(self.curTime, self.curBitrate, self.curSize))
+
         except IndexError:
             pass
         return True
 
-    def get_ffmpeg_str(self):
+    def get_ffmpeg_str(self, name):
         audioStr = ""
         videoStr = ""
         inputStr = ""
@@ -86,14 +114,8 @@ class MultiTrackRec:
             audioStr += audiotracktemplate.format(id=track["id"])
         date = datetime.date.today()
         time = datetime.time()
-        filename = filenameTemplate.format(year=date.year, month=date.month, day=date.day, hour=time.hour,
-                                           minute=time.minute, second=time.second)
-        filenamecopy = filename
-        i = 0
-        while os.path.exists(filename):
-            filename = filenamecopy + "_" + str(i)
-            i += 1
-        ffstr = ffmpegtemplate.format(inputs=inputStr, videotracks=videoStr, audiotracks=audioStr, filename=filename)
+
+        ffstr = ffmpegtemplate.format(inputs=inputStr, videotracks=videoStr, audiotracks=audioStr, filename=name)
         self.log.debug("FFmpeg String generated: " + ffstr)
         return ffstr
 
