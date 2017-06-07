@@ -32,10 +32,11 @@ class voctorec(object):
         Connection.enterNonblockingMode()
         Connection.on("message", self.msgCallback)
 
+        #TODO automatic track id
         self.rec = MultiTrackRec()
         self.rec.add_video_track(11000, 0, "mix")
         self.rec.add_video_track(13000, 1, "cam_mirror")
-        self.rec.add_video_track(13001, 1, "grabber_mirror")
+        self.rec.add_video_track(13001, 2, "grabber_mirror")
         self.rec.add_audio_track(0, "mainaudio")
 
     def msgCallback(self, args):
