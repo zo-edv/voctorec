@@ -8,7 +8,7 @@ import lib.connection as Connection
 from gi.repository import GObject
 import copy
 
-#TODO: move templates to config file
+# TODO: move templates to config file
 ffmpegtemplate = """ffmpeg -y -nostdin \
 {inputs} \
 -ac 2 -channel_layout 2 -aspect 16:9 \
@@ -30,6 +30,8 @@ class MultiTrackRec:
         self.ffmpegProcess = None
         self.videotracks = list()
         self.audiotracks = list()
+        self.segmented = True
+        self.segment_time = 180
         self.log = logging.getLogger("multitrackrec")
         self.log.info("MultiTrackRecorder Initialized")
         self.basepath = "/home/zoadmin/record/"
