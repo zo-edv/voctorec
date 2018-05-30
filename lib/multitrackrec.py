@@ -50,6 +50,8 @@ class MultiTrackRec:
 
     def start_recording(self):
 
+        self.log.info('starting recording')
+
         date = datetime.datetime.now()
 
         foldername = filenameTemplate.format(year=date.year, month=date.month, day=date.day, hour=date.hour,
@@ -81,7 +83,7 @@ class MultiTrackRec:
             self.ffmpegProcess = None
             self.start_recording()
         self.recording = True
-        Connection.send("message rec_running")
+        Connection.send("message", "rec_running")
         GObject.io_add_watch(self.ffmpegProcess.stderr, GObject.IO_IN, self.on_data)
 
     def stop_recording(self):
@@ -120,4 +122,3 @@ class MultiTrackRec:
         ffstr = ffmpegtemplate.format(inputs=inputStr, videotracks=videoStr, audiotracks=audioStr, filename=name)
         self.log.debug("FFmpeg String generated: " + ffstr)
         return ffstr
-
