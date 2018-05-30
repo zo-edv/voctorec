@@ -17,7 +17,7 @@ ffmpegtemplate = """ffmpeg -y -nostdin \
 -flags +global_header -flags +ilme+ildct \
 -f segment -segment_time 180 -segment_format mpegts {filename}-%d.ts"""
 videotracktemplate = "-map {id}:v -c:v:{id} mpeg2video -pix_fmt:v:{id} yuv420p -qscale:v:{id} 2 -qmin:v:{id} 2 -qmax:v:{id} 7 -keyint_min 0 -bf:{id} 0 -g:{id} 0 -intra:{id} -maxrate:{id} 90M "
-audiotracktemplate = "-map {id}:a -c:a:{id} mp2 -ac:a:{id} 2 -ar:a:{id} 48000 "
+audiotracktemplate = "-map {id}:a -c:a:{id} mp2 -b:a:{id} 192k -ac:a:{id} 2 -ar:a:{id} 48000 "
 inputtemplate = "-i tcp://{host}:{port} "
 filenameTemplate = "voctorec_{year}-{month}-{day}_{hour}-{minute}-{second}"
 
