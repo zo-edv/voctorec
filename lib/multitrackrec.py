@@ -105,8 +105,10 @@ class MultiTrackRec:
         b = subprocess.run(['df', '-h', '--output=avail', '/dev/sda1'], stdout=subprocess.PIPE)
         self.log.debug(a.stdout.split())
         self.log.debug(b.stdout.split())
-        self.log.debug("Time: {}, Bitrate: {}, Size: {}".format(self.curTime, self.curBitrate, self.curSize))
-        Connection.send("message", "recstatus,{},{},{}".format(self.curTime, self.curBitrate, self.curSize))
+        self.curSize = a.stdout.split()[0]
+        self.availSize = b.stdout.split()[1]
+        self.log.debug("Time: {}, Avail: {}, Size: {}".format(self.curTime, self.availSize, self.curSize))
+        Connection.send("message", "recstatus,{},{},{}".format(self.curTime, self.availSize, self.curSize))
         return True
 
     def get_ffmpeg_str(self, name):
