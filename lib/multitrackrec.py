@@ -101,9 +101,6 @@ class MultiTrackRec:
                 self.curTime = l[5:]
         self.log.debug("Time: {}, Bitrate: {}, Size: {}".format(self.curTime, self.curBitrate, self.curSize))
         Connection.send("message", "recstatus,{},{},{}".format(self.curTime, self.curBitrate, self.curSize))
-
-        except IndexError:
-            pass
         return True
 
     def get_ffmpeg_str(self, name):
