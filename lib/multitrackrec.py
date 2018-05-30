@@ -9,7 +9,7 @@ from gi.repository import GObject
 import copy
 
 # TODO: move templates to config file
-ffmpegtemplate = """ffmpeg -y -nostdin -v \
+ffmpegtemplate = """ffmpeg -y -nostdin \
 {inputs} \
 -ac 2 -channel_layout 2 -aspect 16:9 \
 {videotracks} \
