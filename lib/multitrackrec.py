@@ -96,12 +96,11 @@ class MultiTrackRec:
         line = source.readline()
         line = line.split()
         self.log.debug(line)
-        try:
-            if "time=" in line[-2]:
-                self.curTime = line[-2][5:]
-
-            self.log.debug("Time: {}, Bitrate: {}, Size: {}".format(self.curTime, self.curBitrate, self.curSize))
-            Connection.send("message", "recstatus,{},{},{}".format(self.curTime, self.curBitrate, self.curSize))
+        for l in line:
+            if "time=" in l:
+                self.curTime = l[5:]
+        self.log.debug("Time: {}, Bitrate: {}, Size: {}".format(self.curTime, self.curBitrate, self.curSize))
+        Connection.send("message", "recstatus,{},{},{}".format(self.curTime, self.curBitrate, self.curSize))
 
         except IndexError:
             pass
