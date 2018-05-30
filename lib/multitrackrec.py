@@ -35,6 +35,7 @@ class MultiTrackRec:
         self.log = logging.getLogger("multitrackrec")
         self.log.info("MultiTrackRecorder Initialized")
         self.basepath = "/home/zoadmin/record/"
+        self.folderpath = None
 
     def add_video_track(self, port, id, name):
         track = {"id": int(id), "name": str(name), "port": int(port)}
@@ -72,6 +73,7 @@ class MultiTrackRec:
         cmd = self.get_ffmpeg_str(folderpath + "/segment")
         parsed = shlex.split(cmd)
         self.log.debug("Parsed cmd: " + str(parsed))
+        self.folderpath = folderpath
 
         if not self.ffmpegProcess:
             self.log.info("Starting FFmpeg Recording Process")
@@ -99,6 +101,10 @@ class MultiTrackRec:
         for l in line:
             if "time=" in l:
                 self.curTime = l[5:]
+        a = subprocess.run(['du', '-h', '-s', self.folderpath], stdout=subprocess.PIPE)
+        b = subprocess.run(['df', '-h', '--output=avail', '/dev/sda1'], stdout=subprocess.PIPE)
+        self.log.debug(a.stdout.split())
+        self.log.debug(b.stdout.split())
         self.log.debug("Time: {}, Bitrate: {}, Size: {}".format(self.curTime, self.curBitrate, self.curSize))
         Connection.send("message", "recstatus,{},{},{}".format(self.curTime, self.curBitrate, self.curSize))
         return True
