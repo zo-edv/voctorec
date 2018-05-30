@@ -103,7 +103,7 @@ class MultiTrackRec:
                 self.curTime = l[5:]
         a = subprocess.run(['du', '-h', '-s', self.folderpath], stdout=subprocess.PIPE)
         b = subprocess.run(['df', '-h', '--output=avail', '/dev/sda1'], stdout=subprocess.PIPE)
-        self.curSize = str(a.stdout.split()[0], encoding='utf-8')
+        self.curSize = str(a.stdout.split()[0], encoding='utf-8').replace(',', '.')
         self.availSize = str(b.stdout.split()[1], encoding='utf-8')
         self.log.debug("Time: {}, Avail: {}, Size: {}".format(self.curTime, self.availSize, self.curSize))
         Connection.send("message", "recstatus,{},{},{}".format(self.curTime, self.availSize, self.curSize))
