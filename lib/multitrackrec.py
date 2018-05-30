@@ -103,8 +103,6 @@ class MultiTrackRec:
                 self.curTime = l[5:]
         a = subprocess.run(['du', '-h', '-s', self.folderpath], stdout=subprocess.PIPE)
         b = subprocess.run(['df', '-h', '--output=avail', '/dev/sda1'], stdout=subprocess.PIPE)
-        self.log.debug(a.stdout.split())
-        self.log.debug(b.stdout.split())
         self.curSize = a.stdout.split()[0]
         self.availSize = b.stdout.split()[1]
         self.log.debug("Time: {}, Avail: {}, Size: {}".format(self.curTime, self.availSize, self.curSize))
